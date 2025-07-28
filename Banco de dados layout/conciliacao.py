@@ -52,7 +52,7 @@ def mostrar_conciliacao(base):
     st.write("\nResumo:")
     st.dataframe(conciliado["Status"].value_counts().rename("Qtd"))
 
-    def exibir_conciliacao(base, salvar_func):
+def exibir_conciliacao(base, salvar_func):
     trans = base[base["Conciliado com"].isna() | (base["Conciliado com"] == "")]
     if trans.empty: return
 
