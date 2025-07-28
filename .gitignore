@@ -1,0 +1,39 @@
+# Azure Database - Environment variables
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# Streamlit cache
+.streamlit/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Data files (optional - uncomment if you don't want to track CSV files)
+# *.csv
+# *.xlsx
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/

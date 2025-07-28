@@ -16,6 +16,17 @@ from dashboard import mostrar_dashboard
 from financas import mostrar_financeiro
 from emissoes import mostrar_emissao
 from data_loader import carregar_base, salvar_base
+
+# Tenta importar módulos do Azure, mas continua sem eles
+try:
+    from azure_setup import mostrar_configuracao_azure, mostrar_status_azure
+    AZURE_SETUP_AVAILABLE = True
+except ImportError:
+    AZURE_SETUP_AVAILABLE = False
+    def mostrar_configuracao_azure():
+        st.error("❌ Módulos do Azure não disponíveis. Instale as dependências: pip install -r requirements.txt")
+    def mostrar_status_azure():
+        st.sidebar.info("📁 Modo CSV (Azure indisponível)")
     
     st.write("Selecione uma fatura para ver os detalhes.")
 
@@ -25,13 +36,17 @@ from data_loader import carregar_base, salvar_base
 st.set_page_config(page_title="Avila Transportes", layout="wide")
 st.title("🚛 Sistema Unificado - Ávila Transportes")
 
+# Mostra status do Azure na sidebar
+mostrar_status_azure()
+
 # Menu lateral
 aba = st.sidebar.radio("Escolha a funcionalidade:", [
     "Dashboard Geral", 
     "Consulta de Faturas", 
     "Consulta de Minuta", 
     "Financeiro", 
-    "Emissões"
+    "Emissões",
+    "⚙️ Configuração Azure"
 ])
 
 # Carregamento da base de dados
@@ -61,39 +76,5 @@ elif aba == "Financeiro":
     mostrar_financeiro()
 elif aba == "Emissões":
     mostrar_emissao()
-
-
-
-st.set_page_config("Dashboard Financeiro", layout="wide")
-st.title("💳 Dashboard Financeiro Integrado")
-
-# Carrega a base
-base = carregar_base()
-
-if base.empty:
-    st.warning("⚠️ Base de dados vazia. Importe dados para continuar.")
-    st.stop()
-
-# Filtros
-setores = sorted(base["Setor"].dropna().unique())
-centros = sorted(base["Centro de Custo"].dropna().unique())
-categorias = sorted(base["Categoria"].dropna().unique())
-
-setor_sel = st.sidebar.multiselect("Setores", setores, default=setores)
-centro_sel = st.sidebar.multiselect("Centros de Custo", centros, default=centros)
-cat_sel = st.sidebar.multiselect("Categorias", categorias, default=categorias)
-
-df = base[
-    base["Setor"].isin(setor_sel) &
-    base["Centro de Custo"].isin(centro_sel) &
-    base["Categoria"].isin(cat_sel)
-]
-
-st.markdown("### 📋 Transações Financeiras")
-st.dataframe(df, use_container_width=True)
-
-# Aqui você pode incluir conciliações, atualizações, gráficos, etc.
-
-# Botão para salvar atualizações (exemplo)
-if st.button("Salvar alterações"):
-    salvar_base(df)
+elif aba == "⚙️ Configuração Azure":
+    mostrar_configuracao_azure()

@@ -1,12 +1,21 @@
 import streamlit as st
 import pandas as pd
-import fitz  # PyMuPDF
 import re
 
-@st.cache_data
+# Tenta importar PyMuPDF, mas continua sem ele
+try:
+    import fitz  # PyMuPDF
+    PYMUPDF_AVAILABLE = True
+except ImportError:
+    PYMUPDF_AVAILABLE = False
 
+@st.cache_data
 def extrair_dados_fatura_mello():
     try:
+        if not PYMUPDF_AVAILABLE:
+            st.warning("⚠️ PyMuPDF não disponível. Funcionalidade de PDF limitada.")
+            return pd.DataFrame()
+            
         with fitz.open("AVILA TRANSPORTES.pdf") as doc:
             texto = "\n".join([page.get_text() for page in doc])
 
@@ -30,9 +39,16 @@ def extrair_dados_fatura_mello():
 def mostrar_conciliacao(base):
     st.header("🔁 Conciliação de Fretes - Mello")
 
+    if not PYMUPDF_AVAILABLE:
+        st.warning("⚠️ PyMuPDF não disponível. Para usar funcionalidades de PDF, instale: pip install PyMuPDF")
+        st.info("Funcionalidade limitada - apenas conciliação manual disponível.")
+    
     df_fatura = extrair_dados_fatura_mello()
     if df_fatura.empty:
         st.warning("Nenhum dado extraído do PDF.")
+        # Mostra apenas a interface de conciliação manual
+        if "ID Transação" in base.columns:
+            exibir_conciliacao(base, lambda x: None)  # Mock da função salvar
         return
 
     base["Número"] = base["Número"].astype(str)
@@ -51,10 +67,15 @@ def mostrar_conciliacao(base):
     st.dataframe(conciliado, use_container_width=True)
     st.write("\nResumo:")
     st.dataframe(conciliado["Status"].value_counts().rename("Qtd"))
+    
+    # Download CSV
+    csv = conciliado.to_csv(index=False, sep=";").encode("utf-8")
+    st.download_button("📥 Baixar Conciliação (CSV)", csv, "conciliacao_mello.csv", mime="text/csv")
 
-    def exibir_conciliacao(base, salvar_func):
-    trans = base[base["Conciliado com"].isna() | (base["Conciliado com"] == "")]
-    if trans.empty: return
+def exibir_conciliacao(base, salvar_func):
+    trans = base[base["Conciliado com"].isna() | (base["Conciliado com"] == "")] if "Conciliado com" in base.columns else pd.DataFrame()
+    if trans.empty: 
+        return
 
     st.markdown("### 🔗 Conciliação de Transações")
     with st.form("form_conciliacao"):
@@ -64,8 +85,6 @@ def mostrar_conciliacao(base):
     if submit:
         idx = base[base["ID Transação"] == id_sel].index
         base.loc[idx, "Conciliado com"] = doc
-        salvar_func(base)
+        if salvar_func:
+            salvar_func(base)
         st.success("Conciliação salva com sucesso!")
-
-    csv = conciliado.to_csv(index=False, sep=";").encode("utf-8")
-    st.download_button("📥 Baixar Conciliação (CSV)", csv, "conciliacao_mello.csv", mime="text/csv")
